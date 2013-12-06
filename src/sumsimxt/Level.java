@@ -26,6 +26,8 @@ public class Level {
     private int scrollRateA, scrollRateB;
     private Color bgColor = Color.BLACK;
     private List<MobObject> mobs = new ArrayList<>();
+    private int width = SumSimXT.getGameWidth();
+    private int height = SumSimXT.getGameHeight();
     
     public Level(String name) {
         this.name = name;
@@ -34,8 +36,8 @@ public class Level {
         switch (name) {
             case "Level 1":
                 bgColor = Color.BLACK;
-                bgName1 = "level1a2.png";
-                bgName2 = "level1b2.png";
+                bgName1 = "level1a4_c.png";
+                bgName2 = "level1b4_c.png";
                 scrollRateA = -5;
                 scrollRateB = -2;
                 buildMobsLevel1();
@@ -90,7 +92,7 @@ public class Level {
         final int LEFT_BOUND = 350;
         final int RIGHT_BOUND = 950;
         for (int i = LEFT_BOUND; i < RIGHT_BOUND; i += 75) {
-            for (int j = -375; j < 0; j += 75) {   // start enemies above screen
+            for (int j = -375; j < -75; j += 75) {   // start enemies above screen
                 Sprite randSprite = mobSprites.get(rand.nextInt(mobSprites.size()));
                 List<Target> aiTargets = new ArrayList<>();
                 
@@ -149,7 +151,7 @@ public class Level {
     }
     
     public enum MainMenu {
-        TEXT_POSITION   (300, 500);
+        TEXT_POSITION   (SumSimXT.getGameWidth() / 2 - 325, SumSimXT.getGameHeight() / 2 + 50);
         private int x, y;
         MainMenu(int x, int y) { this.x = x; this.y = y; }
         public int getX() { return x; }

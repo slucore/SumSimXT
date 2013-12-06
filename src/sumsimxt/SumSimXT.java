@@ -29,8 +29,11 @@ public class SumSimXT extends Canvas implements Runnable {
     private JPanel mainPanel = (JPanel) mainFrame.getContentPane();
     private BufferStrategy bufferStrategy;
     private Graphics2D graphics;
-    private static final int WIDTH = 1280;
-    private static final int HEIGHT = 800;
+    private static final int STANDARD_WIDTH = 1000;
+    private static final int STANDARD_HEIGHT = 700;
+    private static int gameWidth = STANDARD_WIDTH;
+    private static int gameHeight = STANDARD_HEIGHT;
+    private boolean fullscreen = false;
     
     // Threading and Networking
     private Executor executor = Executors.newCachedThreadPool();
@@ -51,13 +54,15 @@ public class SumSimXT extends Canvas implements Runnable {
     private boolean embark = false;
     private boolean shotRequested = false;
     private List<ShotObject> shots = new ArrayList<>();
+    int k = 0;
     
     public SumSimXT() {
         Sprite.setSpriteDir(classPath + "../../images/sprites/");
         Level.setBackgroundDir(classPath + "../../images/backgrounds/");
         this.setIgnoreRepaint(true);
-        this.setBounds(0,0,WIDTH,HEIGHT);
-        mainPanel.setPreferredSize(new Dimension(WIDTH,HEIGHT));
+        // fullscreen
+        switchFullscreen();
+        mainPanel.setPreferredSize(new Dimension(gameWidth,gameHeight));
         mainFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         mainFrame.setResizable(false);
         mainFrame.setVisible(true);
@@ -73,7 +78,7 @@ public class SumSimXT extends Canvas implements Runnable {
         graphics = (Graphics2D) bufferStrategy.getDrawGraphics();
         this.setFocusable(true);
         this.requestFocus();
-        player = new PlayerObject(Sprite.getSprite("SHIP_TITAN"), new Point((WIDTH / 2) - 40, HEIGHT - 125), new Dimension(75,100), 50);
+        player = new PlayerObject(Sprite.getSprite("SHIP_TITAN"), new Point((gameWidth / 2) - 40, gameHeight - 125), new Dimension(75,100), 50);
         
         // Show the Menu
         currentLevel = new Level("Main Menu");
@@ -82,7 +87,7 @@ public class SumSimXT extends Canvas implements Runnable {
         int delta_alpha = 10;
         while (!startGame) {
             Image bg = currentLevel.getBackgroundA();
-            graphics.drawImage(bg, 0, 0, WIDTH, HEIGHT, null);
+            graphics.drawImage(bg, 0, 0, gameWidth, gameHeight, null);
             graphics.setColor(new Color(0, 255, 0, alpha));         // green text with variable transparency
             graphics.setFont(new Font("Consolas", Font.BOLD, 72));
             graphics.drawString("Press Z to Start", Level.MainMenu.TEXT_POSITION.getX(), Level.MainMenu.TEXT_POSITION.getY());
@@ -128,7 +133,7 @@ public class SumSimXT extends Canvas implements Runnable {
                 bgB = currentLevel.getBackgroundB();
                 bgScrollerA = currentLevel.getBackgroundA().getHeight(null);
                 bgScrollerB = currentLevel.getBackgroundB().getHeight(null);
-                player.setPoint(new Point((WIDTH / 2) - 40, HEIGHT - 125));
+                player.setPoint(new Point((gameWidth / 2) - 40, gameHeight - 125));
                 player.setCurrentHP(player.getTotalHP());
                 shots = new ArrayList<>();
                 passed = last = System.currentTimeMillis();
@@ -136,17 +141,17 @@ public class SumSimXT extends Canvas implements Runnable {
             passed = System.currentTimeMillis() - last;
             last = System.currentTimeMillis();
             graphics.setColor(currentLevel.getBackgroundColor());
-            graphics.fillRect(0,0,WIDTH,HEIGHT);
-            graphics.drawImage(bgB, 0, 0, WIDTH, HEIGHT, 0, bgScrollerB - HEIGHT, WIDTH, bgScrollerB, null);
+            graphics.fillRect(0,0,gameWidth,gameHeight);
+            graphics.drawImage(bgB, 0, 0, gameWidth, gameHeight, 0, bgScrollerB - gameHeight, gameWidth, bgScrollerB, null);
             graphics.setComposite(parallax);
-            graphics.drawImage(bgA, 0, 0, WIDTH, HEIGHT, 0, bgScrollerA - HEIGHT, WIDTH, bgScrollerA, null);
+            graphics.drawImage(bgA, 0, 0, gameWidth, gameHeight, 0, bgScrollerA - gameHeight, gameWidth, bgScrollerA, null);
             graphics.setComposite(original);
             bgScrollerA += currentLevel.getBackgroundAScrollRate();
             bgScrollerB += currentLevel.getBackgroundBScrollRate();
-            if (bgScrollerA - HEIGHT < 0) {
+            if (bgScrollerA - gameHeight < 0) {
                 bgScrollerA = bgA.getHeight(null);
             }
-            if (bgScrollerB - HEIGHT < 0) {
+            if (bgScrollerB - gameHeight < 0) {
                 bgScrollerB = bgB.getHeight(null);
             }
             if (shotRequested && player.shotCooled()) {
@@ -244,7 +249,7 @@ public class SumSimXT extends Canvas implements Runnable {
         this.addMouseListener(hangarListener);
         currentLevel = new Level("Hangar");
         Image bg = currentLevel.getBackgroundA();
-        graphics.drawImage(bg, 0, 0, WIDTH, HEIGHT, null);
+        graphics.drawImage(bg, 0, 0, gameWidth, gameHeight, null);
         bufferStrategy.show();
         while (!embark) {
             pause(10);
@@ -262,6 +267,28 @@ public class SumSimXT extends Canvas implements Runnable {
         }
     }
     
+    private void switchFullscreen() {
+        if (fullscreen) {
+            GraphicsEnvironment environment = GraphicsEnvironment.getLocalGraphicsEnvironment();
+            GraphicsDevice device = environment.getDefaultScreenDevice();
+            device.setFullScreenWindow(mainFrame);
+            gameWidth = device.getFullScreenWindow().getWidth();
+            gameHeight = device.getFullScreenWindow().getHeight();
+            DisplayMode displayMode = new DisplayMode(gameWidth, gameHeight, 32, DisplayMode.REFRESH_RATE_UNKNOWN);
+            if (device.isDisplayChangeSupported()) {
+                device.setDisplayMode(displayMode);
+            }
+        } else {
+            GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice().setFullScreenWindow(null);
+            gameHeight = STANDARD_HEIGHT;
+            gameWidth = STANDARD_WIDTH;
+        }
+        this.setBounds(0,0,gameWidth,gameHeight);
+        mainPanel.setPreferredSize(new Dimension(gameWidth,gameHeight));
+        mainFrame.pack();
+        mainFrame.setLocationRelativeTo(null);
+    }
+    
     public void shop() {
         // TODO
     }
@@ -270,14 +297,25 @@ public class SumSimXT extends Canvas implements Runnable {
         // TODO
     }
     
+    private class FullScreenListener implements KeyListener {
+        public void keyPressed(KeyEvent e) {
+            if (e.getKeyCode() == KeyEvent.VK_F5) {
+                fullscreen = !fullscreen;
+                switchFullscreen();
+            }
+        }
+        public void keyReleased(KeyEvent e) {}
+        public void keyTyped(KeyEvent e) {}
+    }
+    
     private class HangarListener implements MouseListener {
         public void mouseExited(MouseEvent e) {}
         public void mouseEntered(MouseEvent e) {}
         public void mouseReleased(MouseEvent e) {}
         public void mousePressed(MouseEvent e) {}
         public void mouseClicked(MouseEvent e) {
-            double x = ((double) e.getX()) / WIDTH;
-            double y = ((double) e.getY()) / HEIGHT;
+            double x = ((double) e.getX()) / gameWidth;
+            double y = ((double) e.getY()) / gameHeight;
 //            System.out.format("%d, %d, %f\n%d, %d, %f\n", e.getX(), WIDTH, x, e.getY(), HEIGHT, y);
             if (y > (300.0/800) && y < (430.0/800) && x > (280.0/1450) && x < (440.0/1450)) {
 //                System.out.format("SHOP\n");
@@ -296,6 +334,8 @@ public class SumSimXT extends Canvas implements Runnable {
     private class FlightListener implements KeyListener {
         public void keyPressed(KeyEvent e) {
             switch (e.getKeyCode()) {
+                case KeyEvent.VK_F5:
+                    switchFullscreen();
                 case KeyEvent.VK_Z:
                     // fire primary
                     shotRequested = true;
@@ -367,7 +407,7 @@ public class SumSimXT extends Canvas implements Runnable {
         public void keyPressed(KeyEvent e) {
             if (e.getKeyCode() == KeyEvent.VK_Z) {
                 startGame = true;
-                graphics.drawImage(currentLevel.getBackgroundA(), 0, 0, WIDTH, HEIGHT, null);
+                graphics.drawImage(currentLevel.getBackgroundA(), 0, 0, gameWidth, gameHeight, null);
                 graphics.setColor(new Color(0, 255, 0, 255));
                 graphics.setFont(new Font("Consolas", Font.BOLD, 72));
                 graphics.drawString("... LOADING ...", Level.MainMenu.TEXT_POSITION.getX(), Level.MainMenu.TEXT_POSITION.getY());
@@ -379,11 +419,11 @@ public class SumSimXT extends Canvas implements Runnable {
     }
     
     public static int getGameWidth() {
-        return WIDTH;
+        return gameWidth;
     }
     
     public static int getGameHeight() {
-        return HEIGHT;
+        return gameHeight;
     }
     
     public static PlayerObject getPlayer() {
