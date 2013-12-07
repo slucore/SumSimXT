@@ -159,7 +159,11 @@ public class Level {
     }
     
     public enum MainMenu {
-        TEXT_POSITION   (SumSimXT.getGameWidth() / 2 - 325, SumSimXT.getGameHeight() / 2 + 50);
+        TEXT_POSITION   (SumSimXT.getGameWidth() / 2 - 325, SumSimXT.getGameHeight() / 2 + 25),
+        HIGH_SCORE_TITLE(SumSimXT.getGameWidth() / 2 - 150, SumSimXT.getGameHeight() / 2 + 100),
+        HIGH_SCORE_A    (SumSimXT.getGameWidth() / 2 - 150, SumSimXT.getGameHeight() / 2 + 150),
+        HIGH_SCORE_B    (SumSimXT.getGameWidth() / 2 - 150, SumSimXT.getGameHeight() / 2 + 200),
+        HIGH_SCORE_C    (SumSimXT.getGameWidth() / 2 - 150, SumSimXT.getGameHeight() / 2 + 250);
         private int x, y;
         MainMenu(int x, int y) { this.x = x; this.y = y; }
         public int getX() { return x; }

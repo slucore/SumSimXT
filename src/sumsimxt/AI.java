@@ -16,7 +16,8 @@ import java.util.ArrayList;
 public class AI {
     
     private List<Target> targets = new ArrayList<>();
-
+    private boolean scriptFinished = false;
+    
     private int index;
     
     public AI(List<Target> targets) {
@@ -27,14 +28,13 @@ public class AI {
     public void signalArrived() {
         if (index < targets.size() - 1) {
             index++;
+        } else {
+            scriptFinished = true;
         }
     }
     
     public boolean scriptFinished() {
-        if (index == targets.size() - 1) {
-            return true;
-        }
-        return false;
+        return scriptFinished;
     }
     
     public Target getTarget() {

@@ -17,6 +17,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
+import sumsimxt.ShieldSet.Shield;
 
 /**
  *
@@ -55,6 +56,7 @@ public class SumSimXT extends Canvas implements Runnable {
     private boolean shotRequested = false;
     private List<ShotObject> shots = new ArrayList<>();
     private Random rand = new Random();
+    private ShieldSet shieldSet;
     
     public SumSimXT() {
         Sprite.setSpriteDir(classPath + "../../images/sprites/");
@@ -85,12 +87,21 @@ public class SumSimXT extends Canvas implements Runnable {
         this.addKeyListener(menuListener);
         int alpha = 0;
         int delta_alpha = 10;
+        Font glowFont = new Font("Consolas", Font.BOLD, 72);
+        Font highScoresFont = new Font("Consolas", Font.BOLD, 48);
+        Color highScoresColor = Color.YELLOW;
         while (!startGame) {
             Image bg = currentLevel.getBackgroundA();
             graphics.drawImage(bg, 0, 0, gameWidth, gameHeight, null);
             graphics.setColor(new Color(0, 255, 0, alpha));         // green text with variable transparency
-            graphics.setFont(new Font("Consolas", Font.BOLD, 72));
+            graphics.setFont(glowFont);
             graphics.drawString("Press Z to Start", Level.MainMenu.TEXT_POSITION.getX(), Level.MainMenu.TEXT_POSITION.getY());
+            graphics.setColor(highScoresColor);
+            graphics.setFont(highScoresFont);
+            graphics.drawString("HIGH SCORES", Level.MainMenu.HIGH_SCORE_TITLE.getX(), Level.MainMenu.HIGH_SCORE_TITLE.getY());
+            graphics.drawString("SDL:   2500", Level.MainMenu.HIGH_SCORE_A.getX(), Level.MainMenu.HIGH_SCORE_A.getY());
+            graphics.drawString("JJL:   1250", Level.MainMenu.HIGH_SCORE_B.getX(), Level.MainMenu.HIGH_SCORE_B.getY());
+            graphics.drawString("JLR:    500", Level.MainMenu.HIGH_SCORE_C.getX(), Level.MainMenu.HIGH_SCORE_C.getY());
             alpha += delta_alpha;   // fades text in and out
             if (alpha >= 255) {
                 alpha = 255;
@@ -125,6 +136,7 @@ public class SumSimXT extends Canvas implements Runnable {
         Image bigCoin = Sprite.getSprite("BIG_COIN").getImage();
         Font coinFont = new Font("Helvetica", Font.BOLD, 36);
         graphics.setFont(coinFont);
+        shieldSet = new ShieldSet(1);
         
         while (levelRunning) {
             while (pauseRequested) {}
@@ -158,9 +170,6 @@ public class SumSimXT extends Canvas implements Runnable {
             if (bgScrollerB - gameHeight < 0) {
                 bgScrollerB = bgB.getHeight(null);
             }
-            for (int i = 0; i < player.getCurrentHP(); i++) {
-                graphics.drawImage(heart, (heart.getWidth(null) + 5) * i, gameHeight - heart.getHeight(null), heart.getWidth(null), heart.getHeight(null), null);
-            }
             if (shotRequested && player.shotCooled()) {
                 Sprite shotSprite = Sprite.getSprite("BULLET");
                 Point shotPoint = new Point(player.getPoint());
@@ -173,7 +182,25 @@ public class SumSimXT extends Canvas implements Runnable {
             for (int i = 0; i < shots.size(); i++) {
                 ShotObject shot = shots.get(i);
                 shot.move(passed);
+                if (shot.getPoint().y + shot.getHeight() < 0 || shot.getPoint().y > gameHeight + 100) {
+                    shots.remove(shot);
+                    continue;
+                }
                 if (shot.isAlive()) {
+                    for (int j = 0; j < shieldSet.getShields().size(); j++) {
+                        Shield shield = shieldSet.getShields().get(j);
+                        if (detectCollision(shot, shield)) {
+                            shield.takeHit();
+                            shot.hitSomething();
+                            shot.moveX(-(Sprite.getSprite("SMALL_EXPLOSION").getImage().getWidth(null) / 2));
+                            new Animation(shot, Sprite.getBulletExplosion(), 50);
+                            timer.schedule(new ObjectRemover(shot, shots), 300);
+                            if (!shield.isAlive()) {
+                                new Animation(shield, Sprite.getBulletExplosion(), 50);
+                                timer.schedule(new ObjectRemover(shield, shieldSet.getShields()), 300);
+                            }
+                        }
+                    }
                     if (shot.getSource().equals(player)) {
                         for (int j = 0; j < currentLevel.getMobs().size(); j++) {
                             MobObject mob = currentLevel.getMobs().get(j);
@@ -237,6 +264,42 @@ public class SumSimXT extends Canvas implements Runnable {
                 for (int i = 0; i < currentLevel.getMobs().size(); i++) {
                     MobObject mob = currentLevel.getMobs().get(i);
                     mob.move(passed);
+                    if (mob.getAI().scriptFinished()) {
+                        currentLevel.getMobs().remove(mob);
+                        continue;
+                    }
+                    for (int j = 0; j < shieldSet.getShields().size(); j++) {
+                        Shield shield = shieldSet.getShields().get(j);
+                        if (detectCollision(mob, shield)) {
+                            mob.takeDamage(mob.getCurrentHP());
+                            mob.halt();
+                            new Animation(mob, Sprite.getBulletExplosion(), 50);
+                            timer.schedule(new ObjectRemover(mob, currentLevel.getMobs()), 300);
+                            shield.takeHit();
+                            if (!shield.isAlive()) {
+                                new Animation(shield, Sprite.getBulletExplosion(), 50);
+                                timer.schedule(new ObjectRemover(shield, shieldSet.getShields()), 300);
+                            }
+                        }
+                    }
+                    if (detectCollision(mob, player)) {
+                        mob.takeDamage(mob.getCurrentHP());
+                        mob.halt();
+                        new Animation(mob, Sprite.getBulletExplosion(), 50);
+                        timer.schedule(new ObjectRemover(mob, currentLevel.getMobs()), 300);
+                        player.takeDamage(mob.getCollisionDamage());
+                        if (!player.isAlive()) {
+                            this.removeKeyListener(flightListener);
+                            player.setXVelocity(0);
+                            player.setYVelocity(0);
+                            new Animation(player, Sprite.getDeathExplosion(), 50, 3);
+                            timer.schedule(new TimerTask() {
+                                public void run() {
+                                    goToHangar = true;
+                                }
+                            }, 1500);
+                        }
+                    }
                     Image mobImage = mob.getSprite().getImage();
                     graphics.drawImage(mobImage, mob.getPoint().x, mob.getPoint().y, mobImage.getWidth(null), mobImage.getHeight(null), null);
                     if (mob.shotCooled() && mob.wantsToShoot()) {
@@ -250,6 +313,14 @@ public class SumSimXT extends Canvas implements Runnable {
                 }
             } else {
                 renderingPass++;
+            }
+            for (int i = 0; i < shieldSet.getShields().size(); i++) {
+                Shield shield = shieldSet.getShields().get(i);
+                Image shieldImage = shield.getSprite().getImage();
+                graphics.drawImage(shieldImage, shield.getPoint().x, shield.getPoint().y, shield.getWidth(), shield.getHeight(), null);
+            }
+            for (int i = 0; i < player.getCurrentHP(); i++) {
+                graphics.drawImage(heart, (heart.getWidth(null) + 5) * i, gameHeight - heart.getHeight(null), heart.getWidth(null), heart.getHeight(null), null);
             }
             graphics.drawImage(bigCoin, 0, 0, bigCoin.getWidth(null), bigCoin.getHeight(null), null);
             graphics.setColor(Color.YELLOW);
@@ -269,6 +340,9 @@ public class SumSimXT extends Canvas implements Runnable {
     }
     
     private boolean detectCollision(GameObject a, GameObject b) {
+        if (!a.isAlive() || !b.isAlive()) {
+            return false;
+        }
         int ax = a.getPoint().x;
         int ay = a.getPoint().y;
         int bx = b.getPoint().x;
@@ -297,6 +371,7 @@ public class SumSimXT extends Canvas implements Runnable {
         }
         this.removeMouseListener(hangarListener);
         currentLevel = new Level("Level 1");
+        shieldSet = new ShieldSet(1);
         player.revive();
     }
 

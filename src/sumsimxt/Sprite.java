@@ -121,7 +121,11 @@ public class Sprite {
         HEART       ("heart_30x25.png"),
         VANISH      ("transparent.png"),
         COIN        ("coin_20x25.png"),
-        BIG_COIN    ("coin_40x50.png");
+        BIG_COIN    ("coin_40x50.png"),
+        SHIELD_GREEN_A  ("shield_green_A.png"),
+        SHIELD_GREEN_B  ("shield_green_B.png"),
+        SHIELD_RED_A    ("shield_red_A.png"),
+        SHIELD_RED_B    ("shield_red_B.png");
         
         private String filename;
         SpriteEnum(String filename) {

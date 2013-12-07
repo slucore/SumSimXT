@@ -31,6 +31,7 @@ public class MobObject extends GameObject {
     private double shotVelocity = 100;
     private int shotProclivity = 1000;
     private boolean variableShotVelocity = false;
+    private int collisionDamage = 1;
     private static Random rand = new Random();
     
     public MobObject(Sprite sprite, Point point, Dimension size, String name, int totalHP, AI ai) {
@@ -42,6 +43,19 @@ public class MobObject extends GameObject {
         lastPosition = point;
         shotCooldown = rand.nextInt(maxShotCooldown + 1 - minShotCooldown) + minShotCooldown;
         prepareNextMove();
+    }
+    
+    public int getCollisionDamage() {
+        return collisionDamage;
+    }
+    
+    public int getCurrentHP() {
+        return currentHP;
+    }
+    
+    public void halt() {
+        xVelocity = 0;
+        yVelocity = 0;
     }
     
     public String getName() {
@@ -67,6 +81,10 @@ public class MobObject extends GameObject {
             return true;
         }
         return false;
+    }
+    
+    public AI getAI() {
+        return ai;
     }
     
     public void move(long millis) {

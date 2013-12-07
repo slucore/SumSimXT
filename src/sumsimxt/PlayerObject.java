@@ -71,6 +71,14 @@ public class PlayerObject extends GameObject {
         double seconds = millis / 1000.0;
         moveX(xVelocity * seconds);
         moveY(yVelocity * seconds);
+        if (getPoint().x <= 0) {
+            xVelocity = 0;
+            getPoint().x = 0;
+        }
+        if (getPoint().x + getWidth() >= SumSimXT.getGameWidth()) {
+            xVelocity = 0;
+            getPoint().x = SumSimXT.getGameWidth() - getWidth();
+        }
         cooldownCounter += seconds;
     }
     
