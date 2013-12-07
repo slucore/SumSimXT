@@ -18,23 +18,40 @@ public class PlayerObject extends GameObject {
     private double xVelocity, yVelocity;
     private double horizontalAcceleration = 100;
     private double maxVelocityX = 500;
-    private double horizontalDecelerationFactor = horizontalAcceleration / 8;
+    private double horizontalDecelerationFactor = horizontalAcceleration / 4;
     private double shotCooldown = 0.5;    // seconds
     private double lastShotTime = 0;
     private double cooldownCounter = 0;
     private double shotVelocity = 200;
+    private Sprite shipSprite;
+    private int gold = 0;
     
     public PlayerObject(Sprite sprite, Point point, Dimension size, int totalHP) {
         super(sprite, point, size);
+        shipSprite = sprite;
         this.totalHP = totalHP;
         this.currentHP = totalHP;
     }
     
+    public int getGold() {
+        return gold;
+    }
+    
     public void takeDamage(int dmg) {
-        currentHP -= dmg;
-        if (currentHP <= 0) {
-            this.die();
+        if (dmg < 0) {
+            gold -= dmg;
+        } else {
+            currentHP -= dmg;
+            if (currentHP <= 0) {
+                this.die();
+            }
         }
+    }
+    
+    public void revive() {
+        currentHP = totalHP;
+        setAlive(true);
+        setSprite(shipSprite);
     }
     
     public void setTotalHP(int hp) {

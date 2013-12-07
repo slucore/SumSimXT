@@ -7,8 +7,7 @@ package sumsimxt;
 
 import java.awt.Dimension;
 import java.awt.Point;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Random;
 
 /**
  *
@@ -25,7 +24,14 @@ public class MobObject extends GameObject {
     private Sprite deathSprite;
     private String name;
     private Point lastPosition;
-    private final double ERROR_TOLERANCE = 5.0;
+    private final double ERROR_TOLERANCE = 10.0;
+    private double lastShotTime = 0, cooldownCounter = 0;
+    private int minShotCooldown = 3, maxShotCooldown = 6;
+    private double shotCooldown;
+    private double shotVelocity = 100;
+    private int shotProclivity = 1000;
+    private boolean variableShotVelocity = false;
+    private static Random rand = new Random();
     
     public MobObject(Sprite sprite, Point point, Dimension size, String name, int totalHP, AI ai) {
         super(sprite, point, size);
@@ -34,6 +40,7 @@ public class MobObject extends GameObject {
         this.ai = ai;
         this.name = name;
         lastPosition = point;
+        shotCooldown = rand.nextInt(maxShotCooldown + 1 - minShotCooldown) + minShotCooldown;
         prepareNextMove();
     }
     
@@ -45,11 +52,28 @@ public class MobObject extends GameObject {
         this.deathSprite = deathSprite;
     }
     
+    public void setShotCooldown(int cooldown) {
+        shotCooldown = cooldown;
+    }
+    
+    public void setShotProclivity(int set) {
+        shotProclivity = set;
+    }
+    
+    public boolean wantsToShoot() {
+        if (rand.nextInt(shotProclivity) < 1) {
+            lastShotTime = cooldownCounter;
+            shotCooldown = rand.nextInt(maxShotCooldown + 1 - minShotCooldown) + minShotCooldown;
+            return true;
+        }
+        return false;
+    }
+    
     public void move(long millis) {
         double seconds = millis / 1000.0;
         moveX(xVelocity * seconds);
         moveY(yVelocity * seconds);
-        
+        cooldownCounter += seconds;
 //        List<Point> traversed = new ArrayList<>();
 //        while (lastPosition.x != getPoint().x || lastPosition.y != getPoint().y) {
 //            traversed.add(lastPosition);
@@ -74,12 +98,14 @@ public class MobObject extends GameObject {
 //                prepareNextMove();
 //            }
 //        }
-        
+
         if (Math.abs(getPoint().getX() - currentTarget.getPoint().getX()) < ERROR_TOLERANCE
                 && Math.abs(getPoint().getY() - currentTarget.getPoint().getY()) < ERROR_TOLERANCE) {
             ai.signalArrived();
             prepareNextMove();
-        }
+        } 
+//        else if (!ai.scriptFinished() &&
+//                (getPoint().x < 0 || getPoint().x > SumSimXT.getGameWidth() || getPoint().y > ))
         
 //        if (getPoint().x == currentTarget.getPoint().x && getPoint().y == currentTarget.getPoint().y) {
 //            ai.signalArrived();
@@ -90,6 +116,31 @@ public class MobObject extends GameObject {
 //                || (yVelocity > 0 && getPoint().getY() > currentTarget.getPoint().getY())) {
 //            prepareNextMove();
 //        }
+    }
+    
+    public void startShotCooldown() {
+        lastShotTime = cooldownCounter;
+    }
+    
+    public boolean shotCooled() {
+        if (cooldownCounter > lastShotTime + shotCooldown) {
+            return true;
+        }
+        return false;
+    }
+    
+    public void setVariableShotVelocity(boolean set) {
+        variableShotVelocity = set;
+    }
+    
+    public double getShotVelocity() {
+        if (!variableShotVelocity) {
+            return shotVelocity;
+        } else {
+            double scaling = ((double) (rand.nextInt(401) + 800)) / 1000;
+            System.out.format("%f\n", scaling);
+            return shotVelocity * scaling;
+        }
     }
     
     private void prepareNextMove() {

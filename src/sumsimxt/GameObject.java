@@ -54,6 +54,9 @@ public class GameObject {
     public boolean isAlive() {
         return isAlive;
     }
+    public void setAlive(boolean set) {
+        isAlive = set;
+    }
     public void setPoint(Point p) {
         point = p;
     }

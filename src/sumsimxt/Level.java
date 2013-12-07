@@ -104,10 +104,18 @@ public class Level {
                     aiTargets.add(new Target(new Point(75 + (i - LEFT_BOUND), yTarget), horizSpeed));
                     horizSpeed += 0.05;
                     yTarget += 75;
+                    if (yTarget >= SumSimXT.getGameHeight() - 175) {
+                        aiTargets.add(new Target(new Point(75 + (i - LEFT_BOUND), SumSimXT.getGameHeight() + 100), vertSpeed * 2));
+                        break;
+                    }
                     aiTargets.add(new Target(new Point(75 + (i - LEFT_BOUND), yTarget), vertSpeed));
                     aiTargets.add(new Target(new Point(SumSimXT.getGameWidth() - 50 - (RIGHT_BOUND - i), yTarget), horizSpeed));
                     horizSpeed += 0.05;
                     yTarget += 75;
+                    if (yTarget >= SumSimXT.getGameHeight() - 175) {
+                        aiTargets.add(new Target(new Point(SumSimXT.getGameWidth() - 50 - (RIGHT_BOUND - i), SumSimXT.getGameHeight() + 100), vertSpeed * 2));
+                        break;
+                    }
                     aiTargets.add(new Target(new Point(SumSimXT.getGameWidth() - 50 - (RIGHT_BOUND - i), yTarget), vertSpeed));
                 }
                 

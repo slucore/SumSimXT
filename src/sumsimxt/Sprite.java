@@ -9,8 +9,9 @@ import java.awt.Image;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import javax.imageio.ImageIO;
 
 /**
@@ -23,6 +24,7 @@ public class Sprite {
     private static String imageDir = Sprite.class.getProtectionDomain().getCodeSource().getLocation().getPath() + "images/";
     private Image image;
     private String name;
+    private static List<Sprite> bulletExplosion = new ArrayList<>();
     
     public Sprite(String name, Image image) {
         this.name = name;
@@ -66,8 +68,40 @@ public class Sprite {
         if (spriteMap.keySet().contains(id)) {
             return spriteMap.get(id);
         }
+//        System.out.format("New sprite query: %s\n", id);
         Sprite sprite = new Sprite(id, SpriteEnum.valueOf(id).getFile());
         return new Sprite(id, SpriteEnum.valueOf(id).getFile());
+    }
+    
+    public static List<Sprite> getDeathExplosion() {
+        List<Sprite> ret = new ArrayList<>();
+        File file = new File(imageDir + "explosion.png");
+        for (int i = 0; i < 128*6; i += 128) {
+            Sprite frame = new Sprite("explosion", file, i, 0, 128, 128);
+            frame.scaleSprite(SumSimXT.getPlayer().getWidth(),SumSimXT.getPlayer().getHeight());
+            ret.add(frame);
+        }
+        bulletExplosion = ret;
+        return ret;
+    }
+    
+    public static List<Sprite> getBulletExplosion() {
+        if (!bulletExplosion.isEmpty()) {
+            return bulletExplosion;
+        }
+        List<Sprite> ret = new ArrayList<>();
+        File file = new File(imageDir + "explosion.png");
+        for (int i = 0; i < 128*6; i += 128) {
+            Sprite frame = new Sprite("explosion", file, i, 0, 128, 128);
+            frame.scaleSprite(50,50);
+            ret.add(frame);
+        }
+        bulletExplosion = ret;
+        return ret;
+    }
+    
+    public void scaleSprite(int x, int y) {
+        image = image.getScaledInstance(x, y, Image.SCALE_SMOOTH);
     }
     
     public enum SpriteEnum {
@@ -82,7 +116,12 @@ public class Sprite {
         BULLET      ("bullet_10x30.png"),
         SHIP_TITAN  ("ship_titan_75x100.png"),
         SHIP_SC     ("ship_skycutter_75x75.png"),
-        SMALL_EXPLOSION ("small_explosion.png");
+        SMALL_EXPLOSION ("small_explosion.png"),
+        MOB_LASER   ("mob_laser_10x20.png"),
+        HEART       ("heart_30x25.png"),
+        VANISH      ("transparent.png"),
+        COIN        ("coin_20x25.png"),
+        BIG_COIN    ("coin_40x50.png");
         
         private String filename;
         SpriteEnum(String filename) {

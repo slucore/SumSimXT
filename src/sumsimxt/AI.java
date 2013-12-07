@@ -30,6 +30,13 @@ public class AI {
         }
     }
     
+    public boolean scriptFinished() {
+        if (index == targets.size() - 1) {
+            return true;
+        }
+        return false;
+    }
+    
     public Target getTarget() {
         return targets.get(index);
     }

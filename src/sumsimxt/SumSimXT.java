@@ -54,7 +54,7 @@ public class SumSimXT extends Canvas implements Runnable {
     private boolean embark = false;
     private boolean shotRequested = false;
     private List<ShotObject> shots = new ArrayList<>();
-    int k = 0;
+    private Random rand = new Random();
     
     public SumSimXT() {
         Sprite.setSpriteDir(classPath + "../../images/sprites/");
@@ -78,7 +78,7 @@ public class SumSimXT extends Canvas implements Runnable {
         graphics = (Graphics2D) bufferStrategy.getDrawGraphics();
         this.setFocusable(true);
         this.requestFocus();
-        player = new PlayerObject(Sprite.getSprite("SHIP_TITAN"), new Point((gameWidth / 2) - 40, gameHeight - 125), new Dimension(75,100), 50);
+        player = new PlayerObject(Sprite.getSprite("SHIP_TITAN"), new Point((gameWidth / 2) - 40, gameHeight - 110), new Dimension(75,100), 5);
         
         // Show the Menu
         currentLevel = new Level("Main Menu");
@@ -121,6 +121,10 @@ public class SumSimXT extends Canvas implements Runnable {
 //        }
         shots = new ArrayList<>();
         Timer timer = new Timer();
+        Image heart = Sprite.getSprite("HEART").getImage();
+        Image bigCoin = Sprite.getSprite("BIG_COIN").getImage();
+        Font coinFont = new Font("Helvetica", Font.BOLD, 36);
+        graphics.setFont(coinFont);
         
         while (levelRunning) {
             while (pauseRequested) {}
@@ -154,6 +158,9 @@ public class SumSimXT extends Canvas implements Runnable {
             if (bgScrollerB - gameHeight < 0) {
                 bgScrollerB = bgB.getHeight(null);
             }
+            for (int i = 0; i < player.getCurrentHP(); i++) {
+                graphics.drawImage(heart, (heart.getWidth(null) + 5) * i, gameHeight - heart.getHeight(null), heart.getWidth(null), heart.getHeight(null), null);
+            }
             if (shotRequested && player.shotCooled()) {
                 Sprite shotSprite = Sprite.getSprite("BULLET");
                 Point shotPoint = new Point(player.getPoint());
@@ -173,19 +180,45 @@ public class SumSimXT extends Canvas implements Runnable {
                             if (mob.isAlive() && detectCollision(shot, mob)) {
                                 shot.setSprite(Sprite.getSprite("SMALL_EXPLOSION"));
                                 shot.hitSomething();
-                                timer.schedule(new ObjectRemover(shot, shots), 250);
+                                new Animation(shot, Sprite.getBulletExplosion(), 50);
+                                shot.moveX(-(Sprite.getSprite("SMALL_EXPLOSION").getImage().getWidth(null) / 2));
+                                timer.schedule(new ObjectRemover(shot, shots), 300);
                                 mob.takeDamage(shot.getDamage());
                                 if (!mob.isAlive()) {
                                     timer.schedule(new ObjectRemover(mob, currentLevel.getMobs()), 500);
+                                    if (rand.nextInt(10) < 2) {
+                                        Sprite shotSprite = Sprite.getSprite("COIN");
+                                        Point shotPoint = new Point(mob.getPoint());
+                                        shotPoint.translate((mob.getSprite().getImage().getWidth(null) / 2) - (shotSprite.getImage().getWidth(null) / 2), 0);
+                                        shots.add(new ShotObject(shotSprite, shotPoint, new Dimension(shotSprite.getImage().getWidth(null), shotSprite.getImage().getHeight(null)),
+                                                0, mob.getShotVelocity()*2, -10, mob));
+                                    }
                                 }
                             }
                         }
                     } else {
                         if (detectCollision(shot, player)) {
-                            shot.setSprite(Sprite.getSprite("SMALL_EXPLOSION"));
                             shot.hitSomething();
-                            timer.schedule(new ObjectRemover(shot, shots), 250);                    
+                            if (shot.getDamage() > 0) {
+                                shot.setSprite(Sprite.getSprite("SMALL_EXPLOSION"));
+                                Animation animation = new Animation(shot, Sprite.getBulletExplosion(), 50);
+                                shot.moveX(-(Sprite.getSprite("SMALL_EXPLOSION").getImage().getWidth(null) / 2));
+                            } else {
+                                shot.setSprite(Sprite.getSprite("VANISH"));
+                            }
+                            timer.schedule(new ObjectRemover(shot, shots), 250);
                             player.takeDamage(shot.getDamage());
+                            if (!player.isAlive()) {
+                                this.removeKeyListener(flightListener);
+                                player.setXVelocity(0);
+                                player.setYVelocity(0);
+                                new Animation(player, Sprite.getDeathExplosion(), 50, 3);
+                                timer.schedule(new TimerTask() {
+                                    public void run() {
+                                        goToHangar = true;
+                                    }
+                                }, 1500);
+                            }
                         }
                     }
                 }
@@ -206,16 +239,24 @@ public class SumSimXT extends Canvas implements Runnable {
                     mob.move(passed);
                     Image mobImage = mob.getSprite().getImage();
                     graphics.drawImage(mobImage, mob.getPoint().x, mob.getPoint().y, mobImage.getWidth(null), mobImage.getHeight(null), null);
+                    if (mob.shotCooled() && mob.wantsToShoot()) {
+                        Sprite shotSprite = Sprite.getSprite("MOB_LASER");
+                        Point shotPoint = new Point(mob.getPoint());
+                        shotPoint.translate((mob.getSprite().getImage().getWidth(null) / 2) - (shotSprite.getImage().getWidth(null) / 2), 0);
+                        mob.startShotCooldown();
+                        shots.add(new ShotObject(shotSprite, shotPoint, new Dimension(shotSprite.getImage().getWidth(null), shotSprite.getImage().getHeight(null)),
+                                0, mob.getShotVelocity(), 1, mob));
+                    }
                 }
             } else {
                 renderingPass++;
             }
+            graphics.drawImage(bigCoin, 0, 0, bigCoin.getWidth(null), bigCoin.getHeight(null), null);
+            graphics.setColor(Color.YELLOW);
+            graphics.drawString(String.format("%d", player.getGold()), bigCoin.getWidth(null) + 5, graphics.getFont().getSize() - 5);
             bufferStrategy.show();
-            pause(10);  // fps limiter
+            pause(10);      // fps limiter
         }
-        
-        
-        
     }
     
     private class ObjectRemover extends TimerTask {
@@ -256,6 +297,7 @@ public class SumSimXT extends Canvas implements Runnable {
         }
         this.removeMouseListener(hangarListener);
         currentLevel = new Level("Level 1");
+        player.revive();
     }
 
     private void pause(int milliseconds) {
@@ -351,10 +393,6 @@ public class SumSimXT extends Canvas implements Runnable {
                     // pause
                     pauseRequested = !pauseRequested;
                     break;
-                case KeyEvent.VK_ESCAPE:
-                case KeyEvent.VK_Q:
-                    // quit dialog
-                    break;
                 case KeyEvent.VK_LEFT:
                     // move left
                     movementRequestedX = -1;
@@ -374,6 +412,11 @@ public class SumSimXT extends Canvas implements Runnable {
 //                        player.setXVelocity(player.getHorizontalAcceleration());
 //                    }
                     //player.setXVelocity(player.getXVelocity() + player.getHorizontalAcceleration());
+                    break;
+                case KeyEvent.VK_Q:
+                case KeyEvent.VK_ESCAPE:
+                case KeyEvent.VK_H:
+                    goToHangar = true;
                     break;
                 case KeyEvent.VK_DOWN:
                     // if held, return to hangar
