@@ -54,6 +54,10 @@ public class SumSimXT extends Canvas implements Runnable {
     private boolean goToHangar = false;
     private boolean embark = false;
     private boolean shotRequested = false;
+    private boolean laserRequested = false;
+    private boolean superBombRequested = false;
+    private boolean superBombFired = false;
+    private boolean laserFired = false;
     private List<ShotObject> shots = new ArrayList<>();
     private Random rand = new Random();
     private ShieldSet shieldSet;
@@ -134,9 +138,11 @@ public class SumSimXT extends Canvas implements Runnable {
         Timer timer = new Timer();
         Image heart = Sprite.getSprite("HEART").getImage();
         Image bigCoin = Sprite.getSprite("BIG_COIN").getImage();
+        Image laserIcon = Sprite.getSprite("LASER_ICON").getImage();
         Font coinFont = new Font("Helvetica", Font.BOLD, 36);
         graphics.setFont(coinFont);
         shieldSet = new ShieldSet(1);
+        Sprite.getSuperBombExplosion();
         
         while (levelRunning) {
             while (pauseRequested) {}
@@ -179,9 +185,37 @@ public class SumSimXT extends Canvas implements Runnable {
                 shots.add(new ShotObject(shotSprite, shotPoint, new Dimension(shotSprite.getImage().getWidth(null), shotSprite.getImage().getHeight(null)),
                         0, -player.getShotVelocity(), 50, player));
             }
+            if (laserRequested && player.getLasers() > 0) {
+                laserRequested = false;
+                laserFired = true;
+                player.useLaser();
+                timer.schedule(new TimerTask() { public void run() { laserFired = false; }}, 250);
+            }
+            if (superBombRequested && player.getSuperBombs() > 0) {
+                superBombRequested = false;
+                superBombFired = true;
+                player.useSuperBomb();
+                Sprite shotSprite = Sprite.getSprite("SUPERBOMB");
+                Point shotPoint = new Point(player.getPoint().x + (player.getWidth() / 2) - (shotSprite.getImage().getWidth(null) / 2), player.getPoint().y);
+                ShotObject shot = new ShotObject(shotSprite, shotPoint, new Dimension(shotSprite.getImage().getWidth(null), shotSprite.getImage().getHeight(null)),
+                        0, -player.getShotVelocity() * 0.75, 0, player);
+                shot.setSuperBomb(true);
+                shots.add(shot);
+            }
             for (int i = 0; i < shots.size(); i++) {
                 ShotObject shot = shots.get(i);
                 shot.move(passed);
+                if (shot.isSuperBomb() && shot.getPoint().y <= gameHeight / 4) {
+                    shots.remove(shot);
+//                    Point shotPoint = new Point(shot.getPoint().x + (shot.getWidth()/2) - (256/3), shot.getPoint().y + (shot.getHeight()/2) - (256/3));
+                    Point shotPoint = new Point(shot.getPoint().x - (256/3), shot.getPoint().y - (256/2));
+                    ShotObject explosion = new ShotObject(Sprite.getSprite("VANISH"), shotPoint, 
+                            new Dimension(Sprite.SUPERBOMB_EXPLOSION_WIDTH,Sprite.SUPERBOMB_EXPLOSION_HEIGHT), 0, 0, 100, player);
+                    explosion.setExplosion(true);
+                    shots.add(explosion);
+                    new Animation(explosion, Sprite.getSuperBombExplosion(), 100, 2);
+                    timer.schedule(new ObjectRemover(explosion, shots), 600);
+                }
                 if (shot.getPoint().y + shot.getHeight() < 0 || shot.getPoint().y > gameHeight + 100) {
                     shots.remove(shot);
                     continue;
@@ -205,12 +239,14 @@ public class SumSimXT extends Canvas implements Runnable {
                         for (int j = 0; j < currentLevel.getMobs().size(); j++) {
                             MobObject mob = currentLevel.getMobs().get(j);
                             if (mob.isAlive() && detectCollision(shot, mob)) {
-                                shot.setSprite(Sprite.getSprite("SMALL_EXPLOSION"));
-                                shot.hitSomething();
-                                new Animation(shot, Sprite.getBulletExplosion(), 50);
-                                shot.moveX(-(Sprite.getSprite("SMALL_EXPLOSION").getImage().getWidth(null) / 2));
-                                timer.schedule(new ObjectRemover(shot, shots), 300);
                                 mob.takeDamage(shot.getDamage());
+                                if (!shot.isLaser() && !shot.isExplosion()) {
+                                    shot.setSprite(Sprite.getSprite("SMALL_EXPLOSION"));
+                                    shot.hitSomething();
+                                    new Animation(shot, Sprite.getBulletExplosion(), 50);
+                                    shot.moveX(-(Sprite.getSprite("SMALL_EXPLOSION").getImage().getWidth(null) / 2));
+                                    timer.schedule(new ObjectRemover(shot, shots), 300);
+                                }
                                 if (!mob.isAlive()) {
                                     timer.schedule(new ObjectRemover(mob, currentLevel.getMobs()), 500);
                                     if (rand.nextInt(10) < 2) {
@@ -250,7 +286,9 @@ public class SumSimXT extends Canvas implements Runnable {
                     }
                 }
                 Image shotImage = shot.getSprite().getImage();
-                graphics.drawImage(shotImage, shot.getPoint().x, shot.getPoint().y, shotImage.getWidth(null), shotImage.getHeight(null), null);
+                if (!shot.isExplosion()) {
+                    graphics.drawImage(shotImage, shot.getPoint().x, shot.getPoint().y, shotImage.getWidth(null), shotImage.getHeight(null), null);
+                }
             }
             if (movementRequestedX != 0) {
                 player.setXVelocity(player.getXVelocity() + (movementRequestedX * player.getHorizontalAcceleration()));
@@ -314,6 +352,18 @@ public class SumSimXT extends Canvas implements Runnable {
             } else {
                 renderingPass++;
             }
+            if (laserFired) {
+                Sprite shotSprite = Sprite.getSprite("VANISH");
+                Point shotPoint = new Point(player.getPoint().x + (player.getWidth() / 2) - 1, 0);
+                graphics.setColor(Color.WHITE);
+                graphics.fillRect(shotPoint.x-3, 0, 6, player.getPoint().y);
+                graphics.setColor(Color.RED);
+                graphics.drawLine(shotPoint.x, player.getPoint().y, shotPoint.x, 0);
+                ShotObject shot = new ShotObject(shotSprite, shotPoint, new Dimension(3, gameHeight), 0, 0, 1, player);
+                shot.setLaser(true);
+                shots.add(shot);
+                timer.schedule(new ObjectRemover(shot, shots), 250);
+            }
             for (int i = 0; i < shieldSet.getShields().size(); i++) {
                 Shield shield = shieldSet.getShields().get(i);
                 Image shieldImage = shield.getSprite().getImage();
@@ -321,6 +371,17 @@ public class SumSimXT extends Canvas implements Runnable {
             }
             for (int i = 0; i < player.getCurrentHP(); i++) {
                 graphics.drawImage(heart, (heart.getWidth(null) + 5) * i, gameHeight - heart.getHeight(null), heart.getWidth(null), heart.getHeight(null), null);
+            }
+            for (int i = 1; i <= player.getLasers(); i++) {
+                graphics.drawImage(laserIcon, gameWidth - ((laserIcon.getWidth(null) + 5) * i), gameHeight - laserIcon.getHeight(null),
+                        laserIcon.getWidth(null), laserIcon.getHeight(null), null);
+            }
+            for (int i = 0; i < shots.size(); i++) {
+                if (shots.get(i).isExplosion()) {
+                    ShotObject shot = shots.get(i);
+                    Image shotImage = shot.getSprite().getImage();
+                    graphics.drawImage(shotImage, shot.getPoint().x, shot.getPoint().y, shotImage.getWidth(null), shotImage.getHeight(null), null);
+                }
             }
             graphics.drawImage(bigCoin, 0, 0, bigCoin.getWidth(null), bigCoin.getHeight(null), null);
             graphics.setColor(Color.YELLOW);
@@ -459,9 +520,11 @@ public class SumSimXT extends Canvas implements Runnable {
                     break;
                 case KeyEvent.VK_X:
                     // fire secondary
+                    laserRequested = true;
                     break;
                 case KeyEvent.VK_SPACE:
                     // fire bomb
+                    superBombRequested = true;
                     break;
                 case KeyEvent.VK_P:
                 case KeyEvent.VK_ENTER:

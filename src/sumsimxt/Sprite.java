@@ -25,6 +25,9 @@ public class Sprite {
     private Image image;
     private String name;
     private static List<Sprite> bulletExplosion = new ArrayList<>();
+    private static List<Sprite> superBombExplosion = new ArrayList<>();
+    public static final int SUPERBOMB_EXPLOSION_WIDTH = 226;    // 226
+    public static final int SUPERBOMB_EXPLOSION_HEIGHT = 214;   // 214
     
     public Sprite(String name, Image image) {
         this.name = name;
@@ -81,7 +84,22 @@ public class Sprite {
             frame.scaleSprite(SumSimXT.getPlayer().getWidth(),SumSimXT.getPlayer().getHeight());
             ret.add(frame);
         }
-        bulletExplosion = ret;
+        return ret;
+    }
+    
+    public static List<Sprite> getSuperBombExplosion() {
+        if (!superBombExplosion.isEmpty()) {
+            return superBombExplosion;
+        }
+        List<Sprite> ret = new ArrayList<>();
+//        File file = new File(imageDir + "explosion_huge_256.png");
+        File file = new File(imageDir + "explosion_huge_678x214.png");
+        for (int i = 0; i < SUPERBOMB_EXPLOSION_WIDTH*3; i += SUPERBOMB_EXPLOSION_WIDTH) {
+            Sprite frame = new Sprite("superBomb_explosion", file, i, 0, SUPERBOMB_EXPLOSION_WIDTH, SUPERBOMB_EXPLOSION_HEIGHT);
+//            frame.scaleSprite(256,256);
+            ret.add(frame);
+        }
+        superBombExplosion = ret;
         return ret;
     }
     
@@ -125,7 +143,8 @@ public class Sprite {
         SHIELD_GREEN_A  ("shield_green_A.png"),
         SHIELD_GREEN_B  ("shield_green_B.png"),
         SHIELD_RED_A    ("shield_red_A.png"),
-        SHIELD_RED_B    ("shield_red_B.png");
+        SHIELD_RED_B    ("shield_red_B.png"),
+        LASER_ICON      ("laser_30x30.png");
         
         private String filename;
         SpriteEnum(String filename) {

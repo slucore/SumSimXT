@@ -21,6 +21,9 @@ public class ShotObject extends GameObject {
     private boolean isExplosive = false;
     private boolean isAlive = true;
     private GameObject source;
+    private boolean isLaser = false;
+    private boolean isSuperBomb = false;
+    private boolean isExplosion = false;
     
     public ShotObject(Sprite sprite, Point point, Dimension size, Target target, int damage, GameObject source) {
         super(sprite, point, size);
@@ -37,6 +40,33 @@ public class ShotObject extends GameObject {
         this.yVelocity = yVelocity;
         this.damage = damage;
         this.source = source;
+    }
+    
+    public void setSuperBomb(boolean set) {
+        isSuperBomb = set;
+        if (set) {
+            isAlive = false;
+        }
+    }
+    
+    public void setExplosion(boolean set) {
+        isExplosion = set;
+    }
+    
+    public boolean isExplosion() {
+        return isExplosion;
+    }
+    
+    public boolean isSuperBomb() {
+        return isSuperBomb;
+    }
+    
+    public void setLaser(boolean set) {
+        isLaser = set;
+    }
+    
+    public boolean isLaser() {
+        return isLaser;
     }
     
     public GameObject getSource() {

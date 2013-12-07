@@ -25,6 +25,8 @@ public class PlayerObject extends GameObject {
     private double shotVelocity = 200;
     private Sprite shipSprite;
     private int gold = 0;
+    private int lasers = 3;
+    private int superBombs = 100;
     
     public PlayerObject(Sprite sprite, Point point, Dimension size, int totalHP) {
         super(sprite, point, size);
@@ -35,6 +37,22 @@ public class PlayerObject extends GameObject {
     
     public int getGold() {
         return gold;
+    }
+    
+    public int getSuperBombs() {
+        return superBombs;
+    }
+    
+    public void useSuperBomb() {
+        superBombs--;
+    }
+    
+    public void useLaser() {
+        lasers--;
+    }
+    
+    public int getLasers() {
+        return lasers;
     }
     
     public void takeDamage(int dmg) {

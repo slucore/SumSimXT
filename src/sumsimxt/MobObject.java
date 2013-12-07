@@ -121,9 +121,13 @@ public class MobObject extends GameObject {
                 && Math.abs(getPoint().getY() - currentTarget.getPoint().getY()) < ERROR_TOLERANCE) {
             ai.signalArrived();
             prepareNextMove();
-        } 
-//        else if (!ai.scriptFinished() &&
-//                (getPoint().x < 0 || getPoint().x > SumSimXT.getGameWidth() || getPoint().y > ))
+        } else if (!ai.scriptFinished() &&
+                (getPoint().x < 0 || getPoint().x > SumSimXT.getGameWidth() || getPoint().y > SumSimXT.getGameHeight())) {
+            getPoint().x = currentTarget.getPoint().x;
+            getPoint().y = currentTarget.getPoint().y;
+            ai.signalArrived();
+            prepareNextMove();
+        }
         
 //        if (getPoint().x == currentTarget.getPoint().x && getPoint().y == currentTarget.getPoint().y) {
 //            ai.signalArrived();

@@ -60,5 +60,8 @@ public class GameObject {
     public void setPoint(Point p) {
         point = p;
     }
+    public void setDimension(Dimension dim) {
+        this.size = dim;
+    }
     
 }
