@@ -11,11 +11,16 @@ import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.image.BufferStrategy;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.*;
 import java.util.List;
 import java.util.*;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import javax.swing.JFrame;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import sumsimxt.ShieldSet.Shield;
 
@@ -61,6 +66,11 @@ public class SumSimXT extends Canvas implements Runnable {
     private List<ShotObject> shots = new ArrayList<>();
     private Random rand = new Random();
     private ShieldSet shieldSet;
+    private final String highScoresLocation = "http://www.engineering.uiowa.edu/~slucore/SumSimXT_HighScores.txt";
+    private List<String> highScores = new ArrayList<>();
+    
+    // HighScores stuff
+    private HighScoreCommunicator hsCom = new HighScoreCommunicator();
     
     public SumSimXT() {
         Sprite.setSpriteDir(classPath + "../../images/sprites/");
@@ -74,6 +84,23 @@ public class SumSimXT extends Canvas implements Runnable {
         mainFrame.setVisible(true);
     }
     
+//    public List<String> getHighScores() {
+//        try {
+//            URL highScoresURL = new URL(highScoresLocation);
+//            InputStream stream = highScoresURL.openStream();
+//            Scanner scan = new Scanner(stream);
+//            while (scan.hasNextLine()) {
+//                ret.add(scan.nextLine());
+//            }
+//            stream.close();
+//        } catch (MalformedURLException ex) {
+//            System.out.format("Malformed URL exception while retrieving high scores.\n");
+//        } catch (IOException ex) {
+//            System.out.format("I/O exception while retrieving high scores.\n");
+//        }
+//        return null;
+//    }
+    
     public void run() {
         // Finish initializing stuff
         mainFrame.getContentPane().add(this);
@@ -85,6 +112,14 @@ public class SumSimXT extends Canvas implements Runnable {
         this.setFocusable(true);
         this.requestFocus();
         player = new PlayerObject(Sprite.getSprite("SHIP_TITAN"), new Point((gameWidth / 2) - 40, gameHeight - 110), new Dimension(75,100), 5);
+        executor.execute(new Runnable() {
+            public void run() {
+                do {
+                    highScores = hsCom.getHighScores();
+                } while (!hsCom.highScoresReady());
+                System.out.format("done\n");
+            }
+        });
         
         // Show the Menu
         currentLevel = new Level("Main Menu");
@@ -103,9 +138,21 @@ public class SumSimXT extends Canvas implements Runnable {
             graphics.setColor(highScoresColor);
             graphics.setFont(highScoresFont);
             graphics.drawString("HIGH SCORES", Level.MainMenu.HIGH_SCORE_TITLE.getX(), Level.MainMenu.HIGH_SCORE_TITLE.getY());
-            graphics.drawString("SDL:   2500", Level.MainMenu.HIGH_SCORE_A.getX(), Level.MainMenu.HIGH_SCORE_A.getY());
-            graphics.drawString("JJL:   1250", Level.MainMenu.HIGH_SCORE_B.getX(), Level.MainMenu.HIGH_SCORE_B.getY());
-            graphics.drawString("JLR:    500", Level.MainMenu.HIGH_SCORE_C.getX(), Level.MainMenu.HIGH_SCORE_C.getY());
+            if (highScores.size() >= 1) {
+                graphics.drawString(highScores.get(0) + ":" + String.format("%7s", highScores.get(1)), 
+                        Level.MainMenu.HIGH_SCORE_A.getX(), Level.MainMenu.HIGH_SCORE_A.getY());
+            }
+            if (highScores.size() >= 3) {
+                graphics.drawString(highScores.get(2) + ":" + String.format("%7s", highScores.get(3)), 
+                        Level.MainMenu.HIGH_SCORE_B.getX(), Level.MainMenu.HIGH_SCORE_B.getY());
+            }
+            if (highScores.size() >= 5) {
+                graphics.drawString(highScores.get(4) + ":" + String.format("%7s", highScores.get(5)), 
+                        Level.MainMenu.HIGH_SCORE_C.getX(), Level.MainMenu.HIGH_SCORE_C.getY());
+            }
+//            graphics.drawString("SDL:   2500", Level.MainMenu.HIGH_SCORE_A.getX(), Level.MainMenu.HIGH_SCORE_A.getY());
+//            graphics.drawString("JJL:   1250", Level.MainMenu.HIGH_SCORE_B.getX(), Level.MainMenu.HIGH_SCORE_B.getY());
+//            graphics.drawString("JLR:    500", Level.MainMenu.HIGH_SCORE_C.getX(), Level.MainMenu.HIGH_SCORE_C.getY());
             alpha += delta_alpha;   // fades text in and out
             if (alpha >= 255) {
                 alpha = 255;
@@ -139,6 +186,7 @@ public class SumSimXT extends Canvas implements Runnable {
         Image heart = Sprite.getSprite("HEART").getImage();
         Image bigCoin = Sprite.getSprite("BIG_COIN").getImage();
         Image laserIcon = Sprite.getSprite("LASER_ICON").getImage();
+        Image superBombIcon = Sprite.getSprite("SUPERBOMB_ICON").getImage();
         Font coinFont = new Font("Helvetica", Font.BOLD, 36);
         graphics.setFont(coinFont);
         shieldSet = new ShieldSet(1);
@@ -376,6 +424,11 @@ public class SumSimXT extends Canvas implements Runnable {
                 graphics.drawImage(laserIcon, gameWidth - ((laserIcon.getWidth(null) + 5) * i), gameHeight - laserIcon.getHeight(null),
                         laserIcon.getWidth(null), laserIcon.getHeight(null), null);
             }
+            for (int i = 1; i <= player.getSuperBombs(); i++) {
+                graphics.drawImage(superBombIcon, gameWidth - ((superBombIcon.getWidth(null) + 5)*i), 
+                        gameHeight - laserIcon.getHeight(null) - superBombIcon.getHeight(null),
+                        superBombIcon.getWidth(null), superBombIcon.getHeight(null), null);
+            }
             for (int i = 0; i < shots.size(); i++) {
                 if (shots.get(i).isExplosion()) {
                     ShotObject shot = shots.get(i);
@@ -468,12 +521,38 @@ public class SumSimXT extends Canvas implements Runnable {
     }
     
     public void shop() {
-        // TODO
+        Shop shop = new Shop();
     }
     
-    public void sendHighScore() {
-        // TODO
-    }
+//    public void sendHighScore() {
+//        try {
+//            URL highScoresURL = new URL(highScoresLocation);
+//            URLConnection con = highScoresURL.openConnection();
+//            con.setDoInput(true);
+//            con.setDoOutput(true);
+//            OutputStream os = con.getOutputStream();
+//            Formatter formatter = new Formatter(os);
+//            for (int i = 0; i < newHighScores.size(); i++) {
+//                formatter.format(newHighScores.get(i));
+//            }
+//        } catch (MalformedURLException ex) {
+//            System.out.format("Malformed URL exception while sending high scores.\n");
+//        } catch (IOException ex) {
+//            System.out.format("I/O exception while sending high scores.\n");
+//        }
+        
+        
+//        try {
+//            File file = new File(classPath + "temp.txt");
+//            FileUtils.writeLines(file, newHighScores);
+//            URL highScoresURL = new URL(highScoresLocation);
+//            URLConnection con = new URL(highScoresLocation).openConnection();
+//            con.setDoOutput(true);
+//            HttpClient client = new DefaultHTTPClient();
+//        } catch (IOException ex) {
+//            System.out.format("I/O exception while sending high scores.\n");
+//        }
+//    }
     
     private class FullScreenListener implements KeyListener {
         public void keyPressed(KeyEvent e) {
@@ -503,7 +582,9 @@ public class SumSimXT extends Canvas implements Runnable {
                 embark = true;
             } else if (y > (710.0/800) && x > (1270.0/1450)) {
 //                System.out.format("EXIT\n");
-                sendHighScore();
+                if (!highScores.isEmpty()) {
+                    hsCom.sendHighScores();
+                }
                 System.exit(0);
             }
         }

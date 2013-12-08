@@ -24,15 +24,45 @@ public class PlayerObject extends GameObject {
     private double cooldownCounter = 0;
     private double shotVelocity = 200;
     private Sprite shipSprite;
-    private int gold = 0;
+    private int gold = 9999;
     private int lasers = 3;
-    private int superBombs = 100;
+    private int superBombs = 3;
+    private boolean hasAirBrakes = false;
+    private ShieldSet shieldSet = new ShieldSet(1);
     
     public PlayerObject(Sprite sprite, Point point, Dimension size, int totalHP) {
         super(sprite, point, size);
         shipSprite = sprite;
         this.totalHP = totalHP;
         this.currentHP = totalHP;
+    }
+    
+    public void spendGold(int spent) {
+        gold -= spent;
+    }
+    
+    public boolean hasAirBrakes() {
+        return hasAirBrakes;
+    }
+    
+    public void addSuperBomb() {
+        superBombs++;
+    }
+    
+    public void addLaser() {
+        lasers++;
+    }
+    
+    public void addAirBrakes() {
+        hasAirBrakes = true;
+    }
+    
+    public ShieldSet getShields() {
+        return shieldSet;
+    }
+    
+    public void rechargeShields() {
+        shieldSet = new ShieldSet(1);
     }
     
     public int getGold() {

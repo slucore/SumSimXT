@@ -21,7 +21,7 @@ import javax.imageio.ImageIO;
 public class Sprite {
     
     private static HashMap<String,Sprite> spriteMap = new HashMap<>();
-    private static String imageDir = Sprite.class.getProtectionDomain().getCodeSource().getLocation().getPath() + "images/";
+    private static String imageDir = Sprite.class.getProtectionDomain().getCodeSource().getLocation().getPath() + "../../images/sprites/";
     private Image image;
     private String name;
     private static List<Sprite> bulletExplosion = new ArrayList<>();
@@ -39,6 +39,15 @@ public class Sprite {
             this.image = ImageIO.read(file);
             this.name = name;
             spriteMap.put(name, this);
+        } catch (IOException ex) {
+            System.err.format("I/O exception while reading sprite %s\n", name);
+        }
+    }
+    
+    public Sprite(String name, File file, boolean map) {
+        try {
+            this.image = ImageIO.read(file);
+            this.name = name;
         } catch (IOException ex) {
             System.err.format("I/O exception while reading sprite %s\n", name);
         }
@@ -66,16 +75,7 @@ public class Sprite {
     public Image getImage() {
         return image;
     }
-    
-    public static Sprite getSprite(String id) {
-        if (spriteMap.keySet().contains(id)) {
-            return spriteMap.get(id);
-        }
-//        System.out.format("New sprite query: %s\n", id);
-        Sprite sprite = new Sprite(id, SpriteEnum.valueOf(id).getFile());
-        return new Sprite(id, SpriteEnum.valueOf(id).getFile());
-    }
-    
+
     public static List<Sprite> getDeathExplosion() {
         List<Sprite> ret = new ArrayList<>();
         File file = new File(imageDir + "explosion.png");
@@ -118,8 +118,23 @@ public class Sprite {
         return ret;
     }
     
-    public void scaleSprite(int x, int y) {
+    public static Sprite getSprite(String id) {
+        if (spriteMap.keySet().contains(id)) {
+            return spriteMap.get(id);
+        }
+//        System.out.format("New sprite query: %s\n", id);
+        Sprite sprite = new Sprite(id, SpriteEnum.valueOf(id).getFile());
+        return new Sprite(id, SpriteEnum.valueOf(id).getFile());
+    }
+    
+    public static Sprite getScaledSprite(String id, int x, int y) {
+        Sprite sprite = new Sprite(id, SpriteEnum.valueOf(id).getFile(), false);
+        return sprite.scaleSprite(x, y);
+    }
+    
+    public Sprite scaleSprite(int x, int y) {
         image = image.getScaledInstance(x, y, Image.SCALE_SMOOTH);
+        return this;
     }
     
     public enum SpriteEnum {
@@ -144,7 +159,11 @@ public class Sprite {
         SHIELD_GREEN_B  ("shield_green_B.png"),
         SHIELD_RED_A    ("shield_red_A.png"),
         SHIELD_RED_B    ("shield_red_B.png"),
-        LASER_ICON      ("laser_30x30.png");
+        LASER_ICON      ("laser_30x30.png"),
+        SUPERBOMB_ICON  ("superbomb_30x30.png"),
+        JET_THRUSTERS   ("superbomb_30x30.png"),
+        AIR_BRAKES      ("superbomb_30x30.png"),
+        BLACK_LASER     ("mob_laser_20x20.png");
         
         private String filename;
         SpriteEnum(String filename) {
