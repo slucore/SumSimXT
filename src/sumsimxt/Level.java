@@ -40,7 +40,7 @@ public class Level {
                 bgName2 = "level1b4_c.png";
                 scrollRateA = -5;
                 scrollRateB = -2;
-                buildMobsLevel1();
+                mobs = buildMobsLevel1();
                 break;
             case "Level 2":
                 bgName1 = "level2.png";
@@ -71,7 +71,11 @@ public class Level {
         }
     }
     
-    private void buildMobsLevel1() {
+    public void rebuildMobs() {
+        mobs = buildMobsLevel1();
+    }
+    
+    private List<MobObject> buildMobsLevel1() {
         Sprite alien = Sprite.getSprite("ALIEN");
         Sprite ninja = Sprite.getSprite("NINJA");
         Sprite sword = Sprite.getSprite("SWORD");
@@ -88,7 +92,7 @@ public class Level {
         Dimension mobDimension = new Dimension(50,50);
         int mobHP = 1;
         Random rand = new Random();
-        mobs = new ArrayList<>();
+        List<MobObject> ret = new ArrayList<>();
         final int LEFT_BOUND = 350;
         final int RIGHT_BOUND = 950;
         for (int i = LEFT_BOUND; i < RIGHT_BOUND; i += 75) {
@@ -125,9 +129,10 @@ public class Level {
                 if (randSprite.getName().equals("NINJA")) {     // special case: ninjas have to become dead ninjas
                     mob.setDeathSprite(dead_ninja);
                 }
-                mobs.add(mob);
+                ret.add(mob);
             }
-        }        
+        }
+        return ret;
     }
     
     public List<MobObject> getMobs() {

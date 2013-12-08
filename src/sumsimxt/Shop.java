@@ -1,8 +1,8 @@
-/*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
+/**
+ * Stephen LuCore and Chad Stapes
+ * Intro to Software Design: Group Project
+ * 12-2-13
  */
-
 package sumsimxt;
 
 import java.awt.Font;
